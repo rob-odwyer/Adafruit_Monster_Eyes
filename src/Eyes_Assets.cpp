@@ -353,7 +353,9 @@ public:
 //  2. STORAGE
 // ===========================================================================
 
+#if CFG_TUD_ENABLED
 static Adafruit_USBD_MSC usb_msc;
+#endif
 static volatile bool mscWritten = false;
 static volatile uint32_t lastWriteMillis = 0;
 
@@ -405,6 +407,13 @@ bool Adafruit_Monster_Eyes::driveModeRequested(void) {
 }
 
 void Adafruit_Monster_Eyes::runDriveMode(void) {
+#if !CFG_TUD_ENABLED
+  // No native USB on this chip (e.g. classic ESP32): a drive cannot be
+  // exported. Write the FAT partition image with esptool instead.
+  EYES_ERR("USB drive mode is not available on this chip.\n");
+  for (;;)
+    delay(1000);
+#else
   EYES_DBG("=== USB DRIVE MODE ===\n");
   EYES_DBG("The display is intentionally off. Copy files, then eject.\n");
 
@@ -457,6 +466,7 @@ void Adafruit_Monster_Eyes::runDriveMode(void) {
     }
     delay(5);
   }
+#endif // CFG_TUD_ENABLED
 }
 
 // ===========================================================================

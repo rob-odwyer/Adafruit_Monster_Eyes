@@ -46,6 +46,36 @@ static const uint8_t gc9a01aInit[] = {
     0x00                 // End of list
 };
 
+// ILI9341 vendor initialisation, transcribed from Adafruit_ILI9341.cpp.
+// Same format as above.
+static const uint8_t ili9341Init[] = {
+    0xEF, 3,    0x03, 0x80, 0x02,
+    0xCF, 3,    0x00, 0xC1, 0x30,
+    0xED, 4,    0x64, 0x03, 0x12, 0x81,
+    0xE8, 3,    0x85, 0x00, 0x78,
+    0xCB, 5,    0x39, 0x2C, 0x00, 0x34, 0x02,
+    0xF7, 1,    0x20,
+    0xEA, 2,    0x00, 0x00,
+    0xC0, 1,    0x23,       // PWCTR1
+    0xC1, 1,    0x10,       // PWCTR2
+    0xC5, 2,    0x3E, 0x28, // VMCTR1
+    0xC7, 1,    0x86,       // VMCTR2
+    0x36, 1,    0x48,       // MADCTL: MX | BGR (esp_lcd rewrites this later)
+    0x37, 1,    0x00,       // VSCRSADD
+    0x3A, 1,    0x55,       // COLMOD: 16 bits per pixel
+    0xB1, 2,    0x00, 0x18, // FRMCTR1
+    0xB6, 3,    0x08, 0x82, 0x27, // DFUNCTR
+    0xF2, 1,    0x00,       // 3Gamma off
+    0x26, 1,    0x01,       // Gamma curve 1
+    0xE0, 15,   0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07,
+    0x10, 0x03, 0x0E, 0x09, 0x00,
+    0xE1, 15,   0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08,
+    0x0F, 0x0C, 0x31, 0x36, 0x0F,
+    0x11, 0x80, // Sleep out, then wait
+    0x29, 0x80, // Display on, then wait
+    0x00        // End of list
+};
+
 // Outstanding DMA transfers per eye. File scope rather than members because
 // the completion callback runs in interrupt context and only gets an eye index
 // as its user context; the library is single-instance by design.
@@ -158,8 +188,8 @@ void Eyes_ESPLCD::drain(int eye, int limit) {
   }
 }
 
-void Eyes_ESPLCD::sendVendorInit(void *io) {
-  const uint8_t *p = gc9a01aInit;
+void Eyes_ESPLCD::sendVendorInit(void *io, const uint8_t *table) {
+  const uint8_t *p = table;
   uint8_t cmd;
   while ((cmd = *p++) != 0x00) {
     const uint8_t x = *p++;
@@ -217,8 +247,8 @@ bool Eyes_ESPLCD::begin(void) {
     // Reset is driven once, above, so the panel object must not touch it.
     pc.reset_gpio_num = -1;
     pc.bits_per_pixel = 16;
-    // GC9A01A wants BGR element order.
-    const bool bgr = (_driver == EYES_ESPLCD_GC9A01A);
+    // GC9A01A and ILI9341 want BGR element order.
+    const bool bgr = (_driver != EYES_ESPLCD_ST7789);
 #if defined(ESP_IDF_VERSION) && defined(ESP_IDF_VERSION_VAL)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
     pc.rgb_ele_order =
@@ -240,7 +270,9 @@ bool Eyes_ESPLCD::begin(void) {
     if (_driver == EYES_ESPLCD_GC9A01A) {
       // The vendor sequence does everything panel_init() would: sleep out,
       // MADCTL, COLMOD, display on.
-      sendVendorInit(ioh);
+      sendVendorInit(ioh, gc9a01aInit);
+    } else if (_driver == EYES_ESPLCD_ILI9341) {
+      sendVendorInit(ioh, ili9341Init);
     } else {
       esp_lcd_panel_init(ph);
     }

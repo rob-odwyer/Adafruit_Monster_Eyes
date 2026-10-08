@@ -23,6 +23,7 @@
 enum EyesESPLCDDriver {
   EYES_ESPLCD_ST7789,  ///< ST7789, shipped in ESP-IDF core
   EYES_ESPLCD_GC9A01A, ///< GC9A01A; vendor init is sent by this backend
+  EYES_ESPLCD_ILI9341, ///< ILI9341; vendor init is sent by this backend
 };
 
 /**
@@ -111,7 +112,7 @@ protected:
   int buffersWanted(void) override { return 2; }
 
 private:
-  void sendVendorInit(void *io);
+  void sendVendorInit(void *io, const uint8_t *table);
   void drain(int eye, int limit);
   void fillPanel(int eye, uint16_t color);
 
