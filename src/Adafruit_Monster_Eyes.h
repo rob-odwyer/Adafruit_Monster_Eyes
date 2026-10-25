@@ -330,8 +330,14 @@ public:
    */
   void setGaze(float x, float y);
 
-  /** @brief Hand the gaze back to the autonomous animator. */
-  void releaseGaze(void) { _gazeExternal = false; }
+  /**
+   * @brief Hand the gaze back to the autonomous animator.
+   *
+   * The animator resumes from wherever the gaze was last put, holding there
+   * for its usual interval, rather than snapping back to where it was before
+   * the override.
+   */
+  void releaseGaze(void);
 
   /** @brief Where the eye is looking. @return -1.0 to 1.0. */
   float gazeX(void) const;

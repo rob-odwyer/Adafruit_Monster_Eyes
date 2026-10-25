@@ -1101,6 +1101,17 @@ void Adafruit_Monster_Eyes::setGaze(float x, float y) {
   _gazeExternal = true;
 }
 
+void Adafruit_Monster_Eyes::releaseGaze(void) {
+  if (_gazeExternal) {
+    // Resume from the overridden position, at rest, starting a fresh hold.
+    _eyeOldX = _eyeNewX = _frameEyeX;
+    _eyeOldY = _eyeNewY = _frameEyeY;
+    _eyeInMotion = false;
+    _eyeMoveStartTime = micros();
+  }
+  _gazeExternal = false;
+}
+
 void Adafruit_Monster_Eyes::setGazeMap(float x, float y) {
   _frameEyeX = x;
   _frameEyeY = y;
